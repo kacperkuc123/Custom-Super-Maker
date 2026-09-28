@@ -1,3 +1,4 @@
+```yaml
 name: Android Super Repack (Universal FS)
 
 on:
@@ -87,24 +88,55 @@ jobs:
           URL="${{ github.event.inputs.stock_firmware_url }}"
 
           echo "==> Downloading Base Firmware..."
+
           if [[ "$PRESET" == "Samsung A04s (64GB)" ]]; then
             gdown --quiet --output stock_firmware.zip '1C9GtYTn1EZ4sQN7qfJeWN6gxDj_WbgY-'
+
           elif [[ "$PRESET" == "Samsung A12s A127F" ]]; then
             gdown --quiet --output stock_firmware.zip '1J38ATKSjoVN2yqVc_GF6JD9GKaPuhK2g'
+
           elif [[ "$PRESET" == "Samsung A15 (128/256GB)" ]]; then
             gdown --quiet --output stock_firmware.zip '12FoeBkPDHddj4lzd-T6pjHRQ8Ey3c2U8'
+
           elif [ -n "$URL" ]; then
-            if [[ $URL == *"mega.nz"* ]]; then megadl -o stock_firmware.zip "$URL"; else wget -q --content-disposition -O stock_firmware.zip "$URL"; fi
+
+            if [[ "$URL" == *"mega.nz"* ]]; then
+              megadl -o stock_firmware.tar.md5 "$URL"
+            else
+              wget -q --content-disposition -O stock_firmware.tar.md5 "$URL"
+            fi
+
           else
-            echo "::error::No device preset or URL selected." && exit 1
+            echo "::error::No device preset or URL selected."
+            exit 1
           fi
 
-          if [ ! -s "stock_firmware.zip" ]; then echo "✗ Error: Firmware download failed." && exit 1; fi
+          if [[ "$PRESET" == "Samsung A04s (64GB)" || \
+                "$PRESET" == "Samsung A12s A127F" || \
+                "$PRESET" == "Samsung A15 (128/256GB)" ]]; then
 
-          echo "==> Extracting AP file..."
-          AP_FILENAME=$(unzip -l "stock_firmware.zip" | grep -i -o -E "AP_.*\.tar\.md5" | head -n 1)
-          unzip -o -j "stock_firmware.zip" "$AP_FILENAME"
-          rm "stock_firmware.zip"
+            if [ ! -s "stock_firmware.zip" ]; then
+              echo "✗ Error: Firmware download failed."
+              exit 1
+            fi
+
+            echo "==> Extracting AP file..."
+            AP_FILENAME=$(unzip -l "stock_firmware.zip" | grep -i -o -E "AP_.*\.tar\.md5" | head -n 1)
+            unzip -o -j "stock_firmware.zip" "$AP_FILENAME"
+            rm "stock_firmware.zip"
+
+          else
+
+            AP_FILENAME="stock_firmware.tar.md5"
+
+            if [ ! -s "$AP_FILENAME" ]; then
+              echo "✗ Error: AP download failed."
+              exit 1
+            fi
+
+            echo "==> Using direct AP file: $AP_FILENAME"
+
+          fi
 
           echo "==> Extracting super.img.lz4..."
           tar -xvf "$AP_FILENAME" --wildcards '*super.img*.lz4'
@@ -232,3 +264,4 @@ jobs:
           files: ${{ steps.package.outputs.tar_path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
